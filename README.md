@@ -1,47 +1,46 @@
 import tkinter as tk
-import subprocess
 import threading
 from flask import Flask, request, jsonify
 
 # Initialize Flask app
 app = Flask(__name__)
 
+# Global variable to hold the Tkinter app instance
+tk_instance = None
+
+# Function to perform when the button is pressed
+def on_button_click():
+    # Example action: print a message or execute some logic
+    print("Button was clicked!")
+
+# Flask route to trigger the button click remotely
+@app.route('/trigger_button', methods=['POST'])
+def trigger_button():
+    if tk_instance is not None:
+        tk_instance.event_generate("<<RemoteButtonClick>>")
+        return jsonify({'status': 'Button triggered successfully!'})
+    return jsonify({'error': 'Tkinter app is not running'})
+
 # Tkinter App Setup
 def create_tkinter_app():
+    global tk_instance
     root = tk.Tk()
+    tk_instance = root
     root.title("Programele.py")
-    
-    # Example UI elements
+
+    # Label in Tkinter app
     label = tk.Label(root, text="This is the Programele.py Tkinter App")
     label.pack(pady=20)
-    
-    def on_exit():
-        root.quit()
-        root.destroy()
 
-    exit_button = tk.Button(root, text="Exit", command=on_exit)
-    exit_button.pack(pady=20)
-    
+    # Button in Tkinter app
+    button = tk.Button(root, text="Click Me", command=on_button_click)
+    button.pack(pady=20)
+
+    # Bind a custom event for remote triggering
+    root.bind("<<RemoteButtonClick>>", lambda e: on_button_click())
+
+    # Start the Tkinter loop
     root.mainloop()
-
-# Flask routes for remote control
-@app.route('/')
-def index():
-    return '''
-        <h1>Remote Control</h1>
-        <form action="/run_script" method="post">
-            <button type="submit" name="script" value="Programele.py">Run Programele.py</button>
-        </form>
-    '''
-
-@app.route('/run_script', methods=['POST'])
-def run_script():
-    script = request.form.get('script')
-    if script == "Programele.py":
-        # You could trigger any specific function here
-        # Since Tkinter is already running, this might not do anything
-        return jsonify({'output': 'Programele.py is already running'})
-    return jsonify({'error': 'No script specified or incorrect script name'})
 
 # Function to start Flask app
 def start_flask_app():
