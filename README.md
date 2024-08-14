@@ -1,25 +1,37 @@
-from flask import Flask, request, jsonify
+import tkinter as tk
 import subprocess
+import os
+import threading
+from flask import Flask, request, jsonify
 
+# Initialize Flask app
 app = Flask(__name__)
 
-@app.route('/')
-def index():
-    return '''
-        <h1>Remote Control</h1>
-        <form action="/run_script" method="post">
-            <button type="submit" name="script" value="Programele.py">Run Programele.py</button>
-        </form>
-    '''
+# Tkinter app setup
+root = tk.Tk()
+root.title("My Raspberry Pi App")
 
+def run_script(script_name):
+    # Function to run a script and show output in Tkinter
+    script_path = os.path.join("/path/to/scripts", script_name)
+    result = subprocess.run(["python3", script_path], capture_output=True, text=True)
+    print(result.stdout)  # Replace with Tkinter widget update logic
+
+# Flask route for remote control
 @app.route('/run_script', methods=['POST'])
-def run_script():
+def run_script_remote():
     script = request.form.get('script')
     if script:
-        # Assuming the script is in the current directory or specify the full path if not
-        result = subprocess.run(["python3", script], capture_output=True, text=True)
-        return jsonify({'output': result.stdout})
-    return jsonify({'error': 'No script specified'})
+        run_script(script)
+        return jsonify({'status': 'Script executed'})
+    return jsonify({'status': 'No script specified'})
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)  # Accessible from any IP address
+def start_flask_app():
+    app.run(host='0.0.0.0', port=5000)
+
+# Start Flask app in a new thread
+flask_thread = threading.Thread(target=start_flask_app)
+flask_thread.start()
+
+# Tkinter main loop
+root.mainloop()
